@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FHEVM 机密投票系统</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
+    <script src="https://unpkg.com/@fhenix/contracts@0.1.0/dist/FHE.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- 头部 -->
+        <header class="header">
+            <h1>🔐 FHEVM 机密投票系统</h1>
+            <p>基于全同态加密的安全投票平台</p>
+        </header>
+
+        <!-- 连接钱包区域 -->
+        <div class="wallet-section" id="walletSection">
+            <div class="wallet-info" id="walletInfo" style="display: none;">
+                <span>已连接: </span>
+                <span id="walletAddress"></span>
+                <button onclick="disconnectWallet()" class="btn btn-secondary">断开连接</button>
+            </div>
+            <button onclick="connectWallet()" class="btn btn-primary" id="connectBtn">
+                🔗 连接钱包
+            </button>
+        </div>
+
+        <!-- 主要功能区域 -->
+        <div class="main-content">
+            <!-- 管理员功能 -->
+            <div class="admin-section" id="adminSection" style="display: none;">
+                <h2>👨‍💼 管理员功能</h2>
+                
+                <!-- 注册投票者 -->
+                <div class="function-card">
+                    <h3>注册投票者</h3>
+                    <div class="input-group">
+                        <input type="text" id="voterAddress" placeholder="投票者地址 (0x...)" class="input">
+                        <button onclick="registerVoter()" class="btn btn-success">注册</button>
+                    </div>
+                </div>
+
+                <!-- 批量注册 -->
+                <div class="function-card">
+                    <h3>批量注册投票者</h3>
+                    <div class="input-group">
+                        <textarea id="voterAddresses" placeholder="投票者地址列表，每行一个地址" class="textarea"></textarea>
+                        <button onclick="registerVoters()" class="btn btn-success">批量注册</button>
+                    </div>
+                </div>
+
+                <!-- 添加投票选项 -->
+                <div class="function-card">
+                    <h3>添加投票选项</h3>
+                    <div class="input-group">
+                        <input type="text" id="optionName" placeholder="选项名称" class="input">
+                        <button onclick="addVoteOption()" class="btn btn-success">添加</button>
+                    </div>
+                </div>
+
+                <!-- 开始投票 -->
+                <div class="function-card">
+                    <h3>开始投票</h3>
+                    <div class="input-group">
+                        <input type="number" id="votingDuration" placeholder="投票持续时间(秒)" class="input" value="3600">
+                        <button onclick="startVoting()" class="btn btn-warning">开始投票</button>
+                    </div>
+                </div>
+
+                <!-- 结束投票 -->
+                <div class="function-card">
+                    <h3>结束投票</h3>
+                    <button onclick="endVoting()" class="btn btn-danger">结束投票</button>
+                </div>
+
+                <!-- 授权查看者 -->
+                <div class="function-card">
+                    <h3>授权查看者</h3>
+                    <div class="input-group">
+                        <input type="text" id="viewerAddress" placeholder="查看者地址 (0x...)" class="input">
+                        <button onclick="authorizeViewer()" class="btn btn-info">授权</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 投票者功能 -->
+            <div class="voter-section" id="voterSection" style="display: none;">
+                <h2>🗳️ 投票功能</h2>
+                
+                <!-- 投票选项列表 -->
+                <div class="function-card">
+                    <h3>投票选项</h3>
+                    <div id="voteOptions" class="vote-options">
+                        <p>加载中...</p>
+                    </div>
+                </div>
+
+                <!-- 投票操作 -->
+                <div class="function-card">
+                    <h3>投票</h3>
+                    <div class="input-group">
+                        <select id="voteSelect" class="input">
+                            <option value="">选择投票选项</option>
+                        </select>
+                        <button onclick="castVote()" class="btn btn-primary">投票</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 查看结果 -->
+            <div class="results-section" id="resultsSection" style="display: none;">
+                <h2>📊 投票结果</h2>
+                <div class="function-card">
+                    <h3>加密投票结果</h3>
+                    <div id="voteResults" class="vote-results">
+                        <p>结果将在投票结束后显示</p>
+                    </div>
+                    <button onclick="getVoteResults()" class="btn btn-info">获取结果</button>
+                </div>
+            </div>
+
+            <!-- 状态信息 -->
+            <div class="status-section">
+                <h2>📋 系统状态</h2>
+                <div class="status-grid">
+                    <div class="status-item">
+                        <span class="label">投票状态:</span>
+                        <span id="votingStatus" class="value">未知</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">投票者总数:</span>
+                        <span id="totalVoters" class="value">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">选项数量:</span>
+                        <span id="optionsCount" class="value">0</span>
+                    </div>
+                    <div class="status-item">
+                        <span class="label">合约地址:</span>
+                        <span id="contractAddress" class="value">未部署</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 日志区域 -->
+        <div class="log-section">
+            <h3>📝 操作日志</h3>
+            <div id="logContainer" class="log-container"></div>
+            <button onclick="clearLog()" class="btn btn-secondary">清空日志</button>
+        </div>
+    </div>
+
+    <!-- 加载提示 -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p id="loadingText">处理中...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html> 
