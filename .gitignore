@@ -146,8 +146,8 @@ artifacts/
 typechain/
 typechain-types/
 
-# Test files (optional - you might want to keep them)
-# test/
+# Test files (ignored from remote repository)
+test/
 
 # Documentation files (optional - you might want to keep them)
 # docs/
