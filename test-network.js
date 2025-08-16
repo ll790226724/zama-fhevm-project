@@ -1,4 +1,4 @@
-// 网络连接测试脚本
+// Network connectivity test script
 const { ethers } = require("hardhat");
 
 const RPC_ENDPOINTS = [

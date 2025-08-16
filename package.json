@@ -11,11 +11,11 @@
     "start": "cd frontend && node server.js",
     "dev": "cd frontend && node server.js"
   },
-  "keywords": ["zama", "fhevm", "confidential", "voting", "blockchain"],
+  "keywords": ["fhevm", "confidential", "voting", "blockchain", "ethereum", "dapp", "smart-contracts"],
   "author": "",
   "license": "MIT",
   "type": "commonjs",
-  "description": "A confidential voting smart contract using Zama FHEVM",
+  "description": "A confidential voting decentralized application using FHEVM and StandardVoting smart contracts",
   "dependencies": {
     "@fhevm/solidity": "^0.7.0",
     "@openzeppelin/contracts": "^5.4.0",

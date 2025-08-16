@@ -1,4 +1,4 @@
-// 测试部署的StandardVoting合约
+// Test deployed StandardVoting contract
 const hre = require("hardhat");
 
 const CONTRACT_ADDRESS = "0xe538256B911EDDB2DDA039f0526D0C98823B045D";
