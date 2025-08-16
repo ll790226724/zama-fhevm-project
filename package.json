@@ -5,8 +5,11 @@
   "scripts": {
     "test": "npx hardhat test",
     "compile": "npx hardhat compile",
-    "deploy": "npx hardhat run scripts/deploy.js --network sepolia",
-    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost"
+    "deploy": "npx hardhat run deploy-sepolia.js --network sepolia",
+    "deploy:zama": "npx hardhat run scripts/deploy.js --network sepolia",
+    "deploy:local": "npx hardhat run scripts/deploy.js --network localhost",
+    "start": "cd frontend && node server.js",
+    "dev": "cd frontend && node server.js"
   },
   "keywords": ["zama", "fhevm", "confidential", "voting", "blockchain"],
   "author": "",

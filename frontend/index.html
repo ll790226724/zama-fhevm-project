@@ -5,104 +5,197 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>FHEVM 机密投票系统</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.ethers.io/lib/ethers-5.7.2.umd.min.js"></script>
-    <script src="https://unpkg.com/@fhenix/contracts@0.1.0/dist/FHE.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+        // 备用CDN源
+        let ethersLoadAttempts = 0;
+        
+        function loadEthers() {
+            ethersLoadAttempts++;
+            console.log(`🔄 尝试加载Ethers.js (第${ethersLoadAttempts}次)`);
+            
+            if (typeof ethers !== 'undefined') {
+                console.log('✅ Ethers.js已成功加载:', ethers.version);
+                window.ethersLoaded = true;
+                return;
+            }
+            
+            if (ethersLoadAttempts >= 3) {
+                console.error('❌ 多次尝试后Ethers.js仍未加载');
+                return;
+            }
+            
+            // 尝试不同的CDN源
+            const cdnSources = [
+                'https://unpkg.com/ethers@5.7.2/dist/ethers.umd.min.js',
+                'https://cdn.skypack.dev/ethers@5.7.2',
+                'https://cdnjs.cloudflare.com/ajax/libs/ethers/5.7.2/ethers.umd.min.js'
+            ];
+            
+            const script = document.createElement('script');
+            script.src = cdnSources[ethersLoadAttempts - 1] || cdnSources[0];
+            script.onload = function() {
+                console.log('✅ Ethers.js从备用源加载成功');
+                window.ethersLoaded = true;
+            };
+            script.onerror = function() {
+                console.warn(`⚠️ CDN源 ${script.src} 加载失败，尝试下一个...`);
+                setTimeout(loadEthers, 1000);
+            };
+            document.head.appendChild(script);
+        }
+        
+        // 页面加载后检查Ethers.js
+        window.addEventListener('load', function() {
+            setTimeout(function() {
+                if (typeof ethers === 'undefined') {
+                    loadEthers();
+                } else {
+                    console.log('✅ Ethers.js v5已加载:', ethers.version);
+                    window.ethersLoaded = true;
+                }
+            }, 500);
+        });
+    </script>
 </head>
 <body>
     <div class="container">
         <!-- 头部 -->
-        <header class="header">
+        <header>
             <h1>🔐 FHEVM 机密投票系统</h1>
             <p>基于全同态加密的安全投票平台</p>
         </header>
 
         <!-- 连接钱包区域 -->
-        <div class="wallet-section" id="walletSection">
+        <div class="wallet-status" id="walletSection">
             <div class="wallet-info" id="walletInfo" style="display: none;">
                 <span>已连接: </span>
                 <span id="walletAddress"></span>
-                <button onclick="disconnectWallet()" class="btn btn-secondary">断开连接</button>
+                <button onclick="disconnectWallet()" class="btn btn-danger">断开连接</button>
             </div>
             <button onclick="connectWallet()" class="btn btn-primary" id="connectBtn">
                 🔗 连接钱包
             </button>
         </div>
 
+        <!-- 合约地址配置 -->
+        <div class="section">
+            <h3>📜 合约配置</h3>
+            <div class="form-group">
+                <label>合约地址:</label>
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <input type="text" id="contractAddressInput" placeholder="输入合约地址..." style="flex: 1;">
+                    <button onclick="updateContractAddress()" class="btn btn-success">更新地址</button>
+                </div>
+                <small style="color: #666; margin-top: 5px; display: block;">
+                    当前地址: <span id="currentContractAddress"></span>
+                </small>
+            </div>
+            
+            <!-- 部署指南 -->
+            <div class="card" style="margin-top: 15px; background: #f8f9fa;">
+                <h4>🚀 合约部署指南</h4>
+                <p style="margin-bottom: 10px;">如果您还没有部署合约，请按以下步骤操作：</p>
+                <ol style="margin-left: 20px; line-height: 1.6;">
+                    <li>确保 <code>.env</code> 文件中已设置您的私钥</li>
+                    <li>从Sepolia水龙头获取测试ETH: 
+                        <a href="https://sepoliafaucet.com/" target="_blank">SepoliaFaucet</a> | 
+                        <a href="https://faucets.chain.link/sepolia" target="_blank">Chainlink</a>
+                    </li>
+                    <li>在项目根目录运行: <code>npm run deploy</code></li>
+                    <li>复制部署成功后显示的合约地址</li>
+                    <li>将合约地址粘贴到上面的输入框中</li>
+                </ol>
+                <div style="margin-top: 15px; padding: 10px; background: #e3f2fd; border-radius: 5px;">
+                    <strong>💡 提示:</strong> 
+                    您也可以使用已部署的测试合约地址来体验功能。
+                </div>
+            </div>
+        </div>
+
         <!-- 主要功能区域 -->
-        <div class="main-content">
+        <div class="grid">
             <!-- 管理员功能 -->
-            <div class="admin-section" id="adminSection" style="display: none;">
+            <div class="section" id="adminSection" style="display: none;">
                 <h2>👨‍💼 管理员功能</h2>
                 
                 <!-- 注册投票者 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>注册投票者</h3>
-                    <div class="input-group">
-                        <input type="text" id="voterAddress" placeholder="投票者地址 (0x...)" class="input">
+                    <div class="form-group">
+                        <input type="text" id="voterAddress" placeholder="投票者地址 (0x...)">
                         <button onclick="registerVoter()" class="btn btn-success">注册</button>
                     </div>
                 </div>
 
                 <!-- 批量注册 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>批量注册投票者</h3>
-                    <div class="input-group">
-                        <textarea id="voterAddresses" placeholder="投票者地址列表，每行一个地址" class="textarea"></textarea>
+                    <div class="form-group">
+                        <textarea id="voterAddresses" placeholder="投票者地址列表，每行一个地址" style="min-height: 100px; width: 100%; padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px;"></textarea>
                         <button onclick="registerVoters()" class="btn btn-success">批量注册</button>
                     </div>
                 </div>
 
                 <!-- 添加投票选项 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>添加投票选项</h3>
-                    <div class="input-group">
-                        <input type="text" id="optionName" placeholder="选项名称" class="input">
+                    <div class="form-group">
+                        <input type="text" id="optionName" placeholder="选项名称">
                         <button onclick="addVoteOption()" class="btn btn-success">添加</button>
                     </div>
                 </div>
 
                 <!-- 开始投票 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>开始投票</h3>
-                    <div class="input-group">
-                        <input type="number" id="votingDuration" placeholder="投票持续时间(秒)" class="input" value="3600">
-                        <button onclick="startVoting()" class="btn btn-warning">开始投票</button>
+                    <div class="form-group">
+                        <input type="number" id="votingDuration" placeholder="投票持续时间(秒)" value="3600">
+                        <button onclick="startVoting()" class="btn btn-success">开始投票</button>
+                    </div>
+                    <div class="form-group">
+                        <button onclick="quickStartVoting()" class="btn btn-primary">快速开始投票 (1小时)</button>
+                        <small style="color: #666; display: block; margin-top: 5px;">快速开始1小时的投票活动</small>
                     </div>
                 </div>
 
                 <!-- 结束投票 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>结束投票</h3>
                     <button onclick="endVoting()" class="btn btn-danger">结束投票</button>
                 </div>
 
                 <!-- 授权查看者 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>授权查看者</h3>
-                    <div class="input-group">
-                        <input type="text" id="viewerAddress" placeholder="查看者地址 (0x...)" class="input">
-                        <button onclick="authorizeViewer()" class="btn btn-info">授权</button>
+                    <div class="form-group">
+                        <input type="text" id="viewerAddress" placeholder="查看者地址 (0x...)">
+                        <button onclick="authorizeViewer()" class="btn btn-success">授权</button>
+                    </div>
+                    <div class="form-group">
+                        <button onclick="authorizeSelf()" class="btn btn-primary">授权自己查看结果</button>
+                        <small style="color: #666; display: block; margin-top: 5px;">快速授权当前账户查看投票结果</small>
                     </div>
                 </div>
             </div>
 
             <!-- 投票者功能 -->
-            <div class="voter-section" id="voterSection" style="display: none;">
+            <div class="section" id="voterSection" style="display: none;">
                 <h2>🗳️ 投票功能</h2>
                 
                 <!-- 投票选项列表 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>投票选项</h3>
-                    <div id="voteOptions" class="vote-options">
+                    <div id="voteOptions" class="option-list">
                         <p>加载中...</p>
                     </div>
                 </div>
 
                 <!-- 投票操作 -->
-                <div class="function-card">
+                <div class="card">
                     <h3>投票</h3>
-                    <div class="input-group">
-                        <select id="voteSelect" class="input">
+                    <div class="form-group">
+                        <select id="voteSelect">
                             <option value="">选择投票选项</option>
                         </select>
                         <button onclick="castVote()" class="btn btn-primary">投票</button>
@@ -111,54 +204,54 @@
             </div>
 
             <!-- 查看结果 -->
-            <div class="results-section" id="resultsSection" style="display: none;">
+            <div class="section" id="resultsSection" style="display: none;">
                 <h2>📊 投票结果</h2>
-                <div class="function-card">
+                <div class="card">
                     <h3>加密投票结果</h3>
-                    <div id="voteResults" class="vote-results">
+                    <div id="voteResults">
                         <p>结果将在投票结束后显示</p>
                     </div>
-                    <button onclick="getVoteResults()" class="btn btn-info">获取结果</button>
+                    <button onclick="getVoteResults()" class="btn btn-success">获取结果</button>
                 </div>
             </div>
 
             <!-- 状态信息 -->
-            <div class="status-section">
+            <div class="section">
                 <h2>📋 系统状态</h2>
-                <div class="status-grid">
-                    <div class="status-item">
-                        <span class="label">投票状态:</span>
-                        <span id="votingStatus" class="value">未知</span>
+                <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                    <div class="card">
+                        <label>投票状态:</label>
+                        <span id="votingStatus" class="vote-count">未知</span>
                     </div>
-                    <div class="status-item">
-                        <span class="label">投票者总数:</span>
-                        <span id="totalVoters" class="value">0</span>
+                    <div class="card">
+                        <label>投票者总数:</label>
+                        <span id="totalVoters" class="vote-count">0</span>
                     </div>
-                    <div class="status-item">
-                        <span class="label">选项数量:</span>
-                        <span id="optionsCount" class="value">0</span>
+                    <div class="card">
+                        <label>选项数量:</label>
+                        <span id="optionsCount" class="vote-count">0</span>
                     </div>
-                    <div class="status-item">
-                        <span class="label">合约地址:</span>
-                        <span id="contractAddress" class="value">未部署</span>
+                    <div class="card">
+                        <label>合约地址:</label>
+                        <span id="contractAddress" class="vote-count" style="font-size: 0.8rem; word-break: break-all;">未部署</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- 日志区域 -->
-        <div class="log-section">
+        <div class="section">
             <h3>📝 操作日志</h3>
-            <div id="logContainer" class="log-container"></div>
-            <button onclick="clearLog()" class="btn btn-secondary">清空日志</button>
+            <div id="logContainer" style="background: #1e1e1e; color: #00ff00; padding: 15px; border-radius: 8px; font-family: 'Courier New', monospace; max-height: 200px; overflow-y: auto; margin-bottom: 15px;"></div>
+            <button onclick="clearLog()" class="btn btn-danger">清空日志</button>
         </div>
     </div>
 
     <!-- 加载提示 -->
-    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
-        <div class="loading-content">
-            <div class="spinner"></div>
-            <p id="loadingText">处理中...</p>
+    <div id="loadingOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.7); display: none; justify-content: center; align-items: center; z-index: 1000;">
+        <div style="background: white; padding: 30px; border-radius: 15px; text-align: center;">
+            <div class="loading"></div>
+            <p id="loadingText" style="margin-top: 15px;">处理中...</p>
         </div>
     </div>
 
